@@ -2,9 +2,23 @@ from rest_framework import serializers
 from .models import Post, Review
 
 class PostSerializer(serializers.ModelSerializer):
+    
+    user_rating = serializers.SerializerMethodField()
+    num_reviews = serializers.SerializerMethodField()
+    
     class Meta:
         model = Post
-        fields = ['id', 'title', 'description', 'created_at', 'updated_at', 'average_rating']
+        fields = ['id', 'title', 'description', 'created_at', 'updated_at', 'average_rating', 'user_rating', 'num_reviews']
+        
+    def get_user_rating(self, obj):
+        request = self.context.get('request')
+        if request:
+            user_review = obj.reviews.filter(user=request.user).first()
+            return user_review.rating if user_review else None
+        return None
+
+    def get_num_reviews(self, obj):
+        return obj.reviews.count()
         
 class ReviewSerializer(serializers.ModelSerializer):
     class Meta:
