@@ -9,7 +9,7 @@ class Post(models.Model):
     description = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-    avg_rating = models.FloatField(default=-1) # -1 when no rating exists
+    
     # num_reviews = models.PositiveIntegerField(default=0)
 
     def average_rating(self) -> float:

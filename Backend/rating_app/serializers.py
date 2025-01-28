@@ -5,6 +5,7 @@ class PostSerializer(serializers.ModelSerializer):
     
     user_rating = serializers.SerializerMethodField()
     num_reviews = serializers.SerializerMethodField()
+    average_rating = serializers.SerializerMethodField()
     
     class Meta:
         model = Post
@@ -19,6 +20,9 @@ class PostSerializer(serializers.ModelSerializer):
 
     def get_num_reviews(self, obj):
         return obj.reviews.count()
+    
+    def get_average_rating(self, obj):
+        return obj.average_rating()
         
 class ReviewSerializer(serializers.ModelSerializer):
     class Meta:
