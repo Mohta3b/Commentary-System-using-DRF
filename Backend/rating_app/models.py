@@ -5,11 +5,11 @@ from django.db.models import Avg
 
 # Create your models here.
 class Post(models.Model):
-    title = models.CharField(max_length=100, default="Content-Title")
+    title = models.CharField(max_length=100, default="Post-Title")
     description = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
-    
+    # avg_rating = models.FloatField(default=-1) # -1 when no rating exists
     # num_reviews = models.PositiveIntegerField(default=0)
 
     def average_rating(self) -> float:
