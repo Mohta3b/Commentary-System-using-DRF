@@ -6,7 +6,10 @@ To compete with Instagram, Google Play, and other rating based systems, I wrote 
 
 We use the following models:
 
-![Entity Model](./Documents/pics/model-entity.png)
+<p align="center">
+<!-- ![Entity Model](./Documents/pics/model-entity.png) -->
+<img src="./Documents/pics/model-entity.png">
+</p>
 
 ## Features & Implementations
 
@@ -21,7 +24,7 @@ The challenge of this feature is calculating the average rating. We could sure f
 
 By using the aggregate function, we make it more efficient by delegating all calculations to the DBMS. This also avoids a lot of traffic between the app and the DBMS since now we don’t need to fetch all the records from Review table.
 
-```
+```python
 def average_rating(self) -> float:
         return Review.objects.filter(post=self).aggregate(Avg("rating"))["rating__avg"] or -1
 ```
