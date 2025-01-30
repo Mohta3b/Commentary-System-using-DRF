@@ -1,5 +1,8 @@
 from rest_framework import serializers
 from .models import Post, Review
+from django.utils.timezone import now
+
+from django.db.models import Sum
 
 class PostSerializer(serializers.ModelSerializer):
     
@@ -25,15 +28,28 @@ class PostSerializer(serializers.ModelSerializer):
         return obj.average_rating()
         
 class ReviewSerializer(serializers.ModelSerializer):
+    post_id = serializers.IntegerField(write_only=True)
+    
     class Meta:
         model = Review
         fields = ['id', 'post', 'user', 'rating', 'description', 'created_at', 'updated_at']
         
-        def create(self, validated_data):
-            post_id = self.context['post_id']
-            user_id = self.context['user_id']
-            if not post_id or not user_id:
-                raise serializers.ValidationError("post_id and user_id must be provided in the context.")
-              
-            review = Review.objects.create(post_id= post_id, user_id=user_id, **validated_data)
+        def validate_post_id(self, value):
+            if not Post.objects.filter(id=value).exists():
+                raise serializers.ValidationError("Post not found.")
+            return value
+
+        def create_or_update_review(self, user):
+            post = Post.objects.get(id=self.validated_data['post_id'])
+            review, created = Review.objects.get_or_create(
+                post=post, user=user,
+                defaults={'rating': self.validated_data['rating'], 'description': self.validated_data.get('description', '')}
+            )
+
+            if not created:
+                review.rating = self.validated_data['rating']
+                review.description = self.validated_data.get('description', '')
+                review.updated_at = now()
+                review.save()
+
             return review
