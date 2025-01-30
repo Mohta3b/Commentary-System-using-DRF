@@ -2,8 +2,16 @@
 
 To compete with Instagram, Google Play, and other rating based systems, I wrote this code to cover their shortcomings and limitations by the request of [‌BitPin](https://www.linkedin.com/company/bitpin/).
 
+## Table of Contents
+
 - [Design](#design)
-- [Features](#features-&-implementations) - []
+- [Features & Implementations](#features--implementations)
+  - [View Posts List](#view-posts-list)
+  - [Add Review](#add-review)
+- [Managing Sudden Influxes of Ratings](#managing-sudden-influxes-of-ratings)
+  - [Introduction](#introduction)
+  - [Our Solution: Customized Time-based Bayesian Average](#our-solution-customized-time-based-bayesian-average)
+  - [Comparison of Different Approaches](#comparison-of-different-approaches)
 
 ## Design
 
@@ -15,9 +23,6 @@ We use the following models:
 </p>
 
 ## Features & Implementations
-
-- [View Posts List](#view-posts-list)
-- [Add or Update Reviews](#add-review)
 
 ### View Posts List
 
@@ -42,6 +47,8 @@ Good news is, you can change your review and rating for a post! (_"An apology ca
 
 ### Managing sudden influxes of ratings
 
+#### Introduction
+
 When a large number of reviews are suddenly submitted to a post—whether due to advertising, manipulation, or coordinated action—it can heavily skew the average rating. There are several articles (like [this link](https://www.fastercapital.com/content/Product-reviews-and-ratings--Rating-Algorithms--Decoding-Rating-Algorithms--What-They-Mean-for-Your-Business.html?utm_source=chatgpt.com)) which discuss the impact of ratings on products and suggest strategies to mitigate such issues.
 
 Based on our project, here are some of the solutions that can be applied:
@@ -58,7 +65,7 @@ In the standard Bayesian model, as described in this [link](https://lukasmurdock
 <p align="center">
   
 $$
-\frac{C \times M + \sum R}{C + N}
+\text{Avg} = \frac{C \times M + \sum R}{C + N}
 $$
 
 </p>
@@ -67,7 +74,7 @@ Where:
 
 - \( C \) is the mean rating across all items.
 - \( M \) is the minimum number of votes required (weighting factor).
-- \( \sum R \) is the sum of all ratings for the item.
+- \( $$\sum R$$ \) is the sum of all ratings for the item.
 - \( N \) is the number of votes for the item.
 
 But to calculate the average rating of a post independently from other posts ratings and to take into account the time factor, we adjust the `C` value as follows:
@@ -88,7 +95,7 @@ With these modifications, our final formula becomes:
 <p align="center">
   
 $$
-\frac{C \times M + \sum R}{C + N}
+\text{Avg} = \frac{C \times M + \sum R}{C + N}
 $$
 
 </p>
@@ -97,13 +104,13 @@ Where:
 
 - \( C \) is the weekly updated average of the post.
 - \( M \) is the weekly updated number of ratings.
-- \( \sum R \) is the sum of all ratings for the post.
+- \( $$\sum R$$ \) is the sum of all ratings for the post.
 - \( N \) is the current number of ratings for the post.
 
 ##### Key Takeaways:
 
 - _Unlike the standard Bayesian method, this approach calculates the real average in the first week (M=0)._
-- _A minor sudden change occurs after each weekly update._
+- _A minor sudden average change occurs after each weekly update._
 
 Here is the comparison between different approaches:
 
