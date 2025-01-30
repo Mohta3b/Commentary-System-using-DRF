@@ -37,7 +37,7 @@ def average_rating(self) -> float:
         return Review.objects.filter(post=self).aggregate(Avg("rating"))["rating__avg"] or -1
 ```
 
-But since we need to make this more efficient and customized, we take another approach that is explained further in this [section](#managing-sudden-influxes-of-ratings). Instead of calculating the average dynamically each time a user wants to see the posts list or adds a review, we update the average of all posts on a timely-basis (every one second).
+But since we need to make this more efficient and customized, we take another approach that is explained further in this [section](#managing-sudden-influxes-of-ratings). Instead of calculating the average dynamically each time a user wants to see the posts list or adds a review, **we update the average of all posts on a timely-basis (every one second).**
 
 This approach significantly decreases the number of processing requests while maintaining a good user experience.
 
