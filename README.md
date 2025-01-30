@@ -37,7 +37,11 @@ def average_rating(self) -> float:
         return Review.objects.filter(post=self).aggregate(Avg("rating"))["rating__avg"] or -1
 ```
 
-But since we need to make this more efficient and customized, we take another approach that is explained further in this [section](#managing-sudden-influxes-of-ratings). Instead of calculating the average dynamically each time, we update it only when new ratings are submitted.
+But since we need to make this more efficient and customized, we take another approach that is explained further in this [section](#managing-sudden-influxes-of-ratings). Instead of calculating the average dynamically each time a user wants to see the posts list or adds a review, we update the average of all posts on a timely-basis (every one second).
+
+This approach significantly decreases the number of processing requests while maintaining a good user experience.
+
+**Note**: For simplicity and testing, I created an `updater_runner.py` script in the main Backend folder. This script runs the necessary tasks periodically, using the same virtual environment, instead of deploying a task scheduler like `Celery` or `cron jobs` which are more suited for production.
 
 ### Add Review
 
@@ -72,23 +76,23 @@ $$
 
 Where:
 
-- \( C \) is the mean rating across all items.
-- \( M \) is the minimum number of votes required (weighting factor).
+- \( C \) is the minimum number of votes required (weighting factor).
+- \( M \) is the mean rating across all items.
 - \( $$\sum R$$ \) is the sum of all ratings for the item.
 - \( N \) is the number of votes for the item.
 
-But to calculate the average rating of a post independently from other posts ratings and to take into account the time factor, we adjust the `C` value as follows:
+But to calculate the average rating of a post independently from other posts ratings and to take into account the time factor, we adjust the `M` value as follows:
 
-- \( C \) is the weekly updated average of the post.
+- \( M \) is the weekly updated average of the post.
 
-For `M`, we consider tow approaches:
+For `C`, we consider tow approaches:
 
-- **Fixed Approach**: Define `M` as a constant value like 100 or 1000 (based on the expected number of ratings).
-- **Dynamic Approach**: Update `M` dynamically based on the total number of ratings received over time.
+- **Fixed Approach**: Define `C` as a constant value like 100 or 1000 (based on the expected number of ratings).
+- **Dynamic Approach**: Update `C` dynamically based on the total number of ratings received over time.
 
-Since choosing an ideal fixed `M` is difficult due to varying factors affecting each post differently, we go with the former approach, which is better suited in situations where we don't want to preassumption about the number of ratings for a post. So, we define `M` as follows:
+Since choosing an ideal fixed `C` is difficult due to varying factors affecting each post differently, we go with the former approach, which is better suited in situations where we don't want to preassumption about the number of ratings for a post. So, we define `C` as follows:
 
-- \( M \) is the weekly updated total number of ratings so far.
+- \( C \) is the weekly updated total number of ratings so far.
 
 With these modifications, our final formula becomes:
 
@@ -102,14 +106,14 @@ $$
 
 Where:
 
-- \( C \) is the weekly updated average of the post.
-- \( M \) is the weekly updated number of ratings.
+- \( C \) is the weekly updated number of ratings.
+- \( M \) is the weekly updated mean of the post.
 - \( $$\sum R$$ \) is the sum of all ratings for the post.
 - \( N \) is the current number of ratings for the post.
 
 ##### Key Takeaways:
 
-- _Unlike the standard Bayesian method, this approach calculates the real average in the first week (M=0)._
+- _Unlike the standard Bayesian method, this approach calculates the real average in the first week (M=C=0)._
 - _A minor sudden average change occurs after each weekly update._
 
 Here is the comparison between different approaches:
