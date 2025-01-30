@@ -2,6 +2,9 @@
 
 To compete with Instagram, Google Play, and other rating based systems, I wrote this code to cover their shortcomings and limitations by the request of [‌BitPin](https://www.linkedin.com/company/bitpin/).
 
+- [Design](#design)
+- [Features](#features-&-implementations) - []
+
 ## Design
 
 We use the following models:
@@ -18,19 +21,98 @@ We use the following models:
 
 ### View Posts List
 
-This feature is designed to return the list of posts among with their average rating and the rating that user has submitted for each post(if any).
+This feature retrieves a list of posts along with their average rating and the rating submitted by the user (if available).
 
-The challenge of this feature is calculating the average rating. We could sure fetch all the ratings for the post and then calculate the average by summing up and dividing by the quantity. Now, this would be extremely slow if we have a lot of reviews for the posts.
+The challenge is efficiently calculating the average rating. We could sure fetch all the ratings for the post and then calculate the average by summing up and dividing by the quantity. Now, this would be extremely slow if we have a lot of reviews for the posts.
 
-By using the aggregate function, we make it more efficient by delegating all calculations to the DBMS. This also avoids a lot of traffic between the app and the DBMS since now we don’t need to fetch all the records from Review table.
+Using the aggregate function, we make it more efficient by delegating all calculations to the DBMS. This also avoids a lot of traffic between the app and the DBMS since now we don’t need to fetch all the records from Review table.
 
 ```python
 def average_rating(self) -> float:
         return Review.objects.filter(post=self).aggregate(Avg("rating"))["rating__avg"] or -1
 ```
 
+But since we need to make this more efficient and customized, we take another approach that is explained further in this [section](#managing-sudden-influxes-of-ratings). Instead of calculating the average dynamically each time, we update it only when new ratings are submitted.
+
 ### Add Review
 
-Since asked from me by the authorities, users can not delete their reviews! (WORDS ONCE SPOKEN CAN NEVER BE TAKEN BACK.)
+As asked from me by the authorities, users cannot delete their reviews! (_"Words once spoken can never be taken back."_)
 
-Good news is, you can change your review and rating for a post! (BUT AN APOLOGY CAN SOMETIMES ALTER THINGS!)
+Good news is, you can change your review and rating for a post! (_"An apology can sometimes alter things!"_)
+
+### Managing sudden influxes of ratings
+
+When a large number of reviews are suddenly submitted to a post—whether due to advertising, manipulation, or coordinated action—it can heavily skew the average rating. There are several articles (like [this link](https://www.fastercapital.com/content/Product-reviews-and-ratings--Rating-Algorithms--Decoding-Rating-Algorithms--What-They-Mean-for-Your-Business.html?utm_source=chatgpt.com)) which discuss the impact of ratings on products and suggest strategies to mitigate such issues.
+
+Based on our project, here are some of the solutions that can be applied:
+
+- [Time-based Weighted Average Rating](https://docs.timescale.com/use-timescale/latest/hyperfunctions/time-weighted-averages/)
+- [Machine Learning Models](https://www.restack.io/p/ai-for-fraud-prevention-answer-detect-fraudulent-reviews-cat-ai?utm_source=chatgpt.com)
+- [Bayesian Average](https://lukasmurdock.com/bayes-average/?utm_source=chatgpt.com)
+- [Rate-Limiting](https://dev.to/satrobit/rate-limiting-using-the-token-bucket-algorithm-3cjh)
+
+#### **Our Solution: Custimized Time-based Bayesian Average**
+
+In the standard Bayesian model, as described in this [link](https://lukasmurdock.com/bayes-average/?utm_source=chatgpt.com), the formula is:
+
+<p align="center">
+  
+$$
+\frac{C \times M + \sum R}{C + N}
+$$
+
+</p>
+
+Where:
+
+- \( C \) is the mean rating across all items.
+- \( M \) is the minimum number of votes required (weighting factor).
+- \( \sum R \) is the sum of all ratings for the item.
+- \( N \) is the number of votes for the item.
+
+But to calculate the average rating of a post independently from other posts ratings and to take into account the time factor, we adjust the `C` value as follows:
+
+- \( C \) is the weekly updated average of the post.
+
+For `M`, we consider tow approaches:
+
+- **Fixed Approach**: Define `M` as a constant value like 100 or 1000 (based on the expected number of ratings).
+- **Dynamic Approach**: Update `M` dynamically based on the total number of ratings received over time.
+
+Since choosing an ideal fixed `M` is difficult due to varying factors affecting each post differently, we go with the former approach, which is better suited in situations where we don't want to preassumption about the number of ratings for a post. So, we define `M` as follows:
+
+- \( M \) is the weekly updated total number of ratings so far.
+
+With these modifications, our final formula becomes:
+
+<p align="center">
+  
+$$
+\frac{C \times M + \sum R}{C + N}
+$$
+
+</p>
+
+Where:
+
+- \( C \) is the weekly updated average of the post.
+- \( M \) is the weekly updated number of ratings.
+- \( \sum R \) is the sum of all ratings for the post.
+- \( N \) is the current number of ratings for the post.
+
+##### Key Takeaways:
+
+- _Unlike the standard Bayesian method, this approach calculates the real average in the first week (M=0)._
+- _A minor sudden change occurs after each weekly update._
+
+Here is the comparison between different approaches:
+
+#### Comparison of Different Approaches:
+
+|                **Method**                |                            **Description**                            |                         **Pros**                          |                         **Cons**                          |
+| :--------------------------------------: | :-------------------------------------------------------------------: | :-------------------------------------------------------: | :-------------------------------------------------------: |
+|             `Simple Average`             |           Computes the sum of ratings divided by the count            |                  Shows the real average                   |   Easily manipulated by mass voting, advertising, etc.    |
+|      `Time-Based Weighted Average`       | Assigns more weight to older reviews, reducing the impact of new ones |          Prevents sudden changes in the average           |       In some cases, new reviews are more important       |
+|             `Rate-Limiting`              |       Limits the rate of new ratings to prevent sudden changes        |               Prevents rating manipulation                |           Delays the effects of normal ratings            |
+|        `Machine Learning Models`         |         Uses AI to classify reviews as genuine or fraudulent          |               Works well in most scenarios                |      Requires prior data and is complex to implement      |
+| `Custimized Time-based Bayesian Average` |           Uses a Bayesian model with time-based adjustments           | Adapts to each post dynamically and considers all reviews | A minor sudden change occurs after the time-period update |
