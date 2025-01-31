@@ -8,10 +8,12 @@ To compete with Instagram, Google Play, and other rating based systems, I wrote 
 - [Features & Implementations](#features--implementations)
   - [View Posts List](#view-posts-list)
   - [Add Review](#add-review)
+  - [Test Cases](#test-cases)
 - [Managing Sudden Influxes of Ratings](#managing-sudden-influxes-of-ratings)
   - [Introduction](#introduction)
   - [Our Solution: Customized Time-based Bayesian Average](#our-solution-customized-time-based-bayesian-average)
   - [Comparison of Different Approaches](#comparison-of-different-approaches)
+- [How to run](#how-to-run)
 
 ## Design
 
@@ -48,6 +50,14 @@ This approach significantly decreases the number of processing requests while ma
 As asked from me by the authorities, users cannot delete their reviews! (_"Words once spoken can never be taken back."_)
 
 Good news is, you can change your review and rating for a post! (_"An apology can sometimes alter things!"_)
+
+### Test Cases
+
+Tests for the following files are written in the `rating_app/tests/` directory:
+
+- views
+- serializers
+- average updater
 
 ### Managing sudden influxes of ratings
 
@@ -125,3 +135,64 @@ Where:
 |             `Rate-Limiting`              |       Limits the rate of new ratings to prevent sudden changes        |               Prevents rating manipulation                |           Delays the effects of normal ratings            |
 |        `Machine Learning Models`         |         Uses AI to classify reviews as genuine or fraudulent          |               Works well in most scenarios                |      Requires prior data and is complex to implement      |
 | `Custimized Time-based Bayesian Average` |           Uses a Bayesian model with time-based adjustments           | Adapts to each post dynamically and considers all reviews | A minor sudden change occurs after the time-period update |
+
+## How to run
+
+Follow these steps to set up and run the project locally:
+
+### 1. Install Dependencies
+
+First, install the required dependencies from the `requirements.txt` file located in the root directory:
+
+```bash
+pip install -r requirements.txt
+```
+
+### 2. Set Up the Database
+
+Navigate to the `Backend` directory of the project and Run the following commands:
+
+```bash
+python manage.py makemigrations rating_app
+python manage.py migrate rating_app
+```
+
+### 3. Create a Superuser
+
+To access the Django admin panel, create a superuser:
+
+```bash
+python manage.py createsuperuser
+```
+
+Follow the prompts to create the superuser account.
+
+### 4. Run the Development Server
+
+```bash
+python manage.py runserver
+```
+
+By default, the server will run on `http://127.0.0.1:8000`.
+
+### 5. Run the Updater
+
+In a separate terminal window, run the `updater_runner.py` script to update average ratings:
+
+```bash
+python updater_runner.py
+```
+
+### 6. Access the Django Admin Panel
+
+Visit `http://127.0.0.1:8000/admin` in your browser to access the admin panel. You can add users, posts, and reviews here.
+
+### 7. View the List of Posts
+
+To view the list of posts, navigate to:
+
+```bash
+http://127.0.0.1:8000/posts
+```
+
+Also, you can use tools like `Postman` or `curl` to retrieve the list of posts or add a review.
