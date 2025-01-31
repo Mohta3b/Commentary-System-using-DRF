@@ -15,9 +15,8 @@ class Command(BaseCommand):
             N = post.reviews.count() # rating_count
             
             average_rating = (((C * M) + SumR) / (C + N)) if N > 0 else 0
-            
             post.avg_rating = average_rating
-            
+            # print("Average rating", post.avg_rating)
             post.save()
 
         self.stdout.write(self.style.SUCCESS('Successfully updated average ratings for all posts.'))
