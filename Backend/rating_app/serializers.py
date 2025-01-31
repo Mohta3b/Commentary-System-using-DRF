@@ -15,6 +15,8 @@ class PostSerializer(serializers.ModelSerializer):
         fields = ['id', 'title', 'description', 'created_at', 'updated_at', 'average_rating', 'user_rating', 'num_reviews']
         
     def get_user_rating(self, obj):
+        if not self.context['request'].user.pk:
+            return None
         request = self.context.get('request')
         if request:
             user_review = obj.reviews.filter(user=request.user).first()
@@ -32,24 +34,24 @@ class ReviewSerializer(serializers.ModelSerializer):
     
     class Meta:
         model = Review
-        fields = ['id', 'post', 'user', 'rating', 'description', 'created_at', 'updated_at']
+        fields = ['id', 'post_id', 'user_id', 'rating', 'description', 'created_at', 'updated_at']
         
-        def validate_post_id(self, value):
-            if not Post.objects.filter(id=value).exists():
-                raise serializers.ValidationError("Post not found.")
-            return value
+    def validate_post_id(self, value):
+        if not Post.objects.filter(id=value).exists():
+            raise serializers.ValidationError("Post not found.")
+        return value
 
-        def create_or_update_review(self, user):
-            post = Post.objects.get(id=self.validated_data['post_id'])
-            review, created = Review.objects.get_or_create(
-                post=post, user=user,
-                defaults={'rating': self.validated_data['rating'], 'description': self.validated_data.get('description', '')}
-            )
+    def create_or_update_review(self, user):
+        post = Post.objects.get(id=self.validated_data['post_id'])
+        review, created = Review.objects.get_or_create(
+            post=post, user=user,
+            defaults={'rating': self.validated_data['rating'], 'description': self.validated_data.get('description', '')}
+        )
 
-            if not created:
-                review.rating = self.validated_data['rating']
-                review.description = self.validated_data.get('description', '')
-                review.updated_at = now()
-                review.save()
+        if not created:
+            review.rating = self.validated_data['rating']
+            review.description = self.validated_data.get('description', '')
+            review.updated_at = now()
+            review.save()
 
-            return review
+        return review

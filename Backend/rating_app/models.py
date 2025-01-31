@@ -10,13 +10,13 @@ class Post(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     
-    avg_rating = models.FloatField(default=-1, editable=False) # -1 when no rating exists
+    avg_rating = models.FloatField(default=0, editable=False) # -1 when no rating exists
     avg_rating_weekly = models.FloatField(default=0, editable=False)
     number_of_ratings_weekly = models.IntegerField(default=0, editable=False)
 
     def average_rating(self) -> float:
         return self.avg_rating
-        # return Review.objects.filter(post=self).aggregate(Avg("rating"))["rating__avg"] or -1
+        # return Review.objects.filter(post=self).aggregate(Avg("rating"))["rating__avg"] or 0
     
     
     def __str__(self):

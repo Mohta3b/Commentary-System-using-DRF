@@ -5,6 +5,7 @@ from .models import *
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
 from rest_framework import status
+from rest_framework.decorators import action
 
 
 # Create your views here.
@@ -22,6 +23,7 @@ class ReviewViewSet(ModelViewSet):
     permission_classes = [IsAuthenticated]
     serializer_class = ReviewSerializer
         
+    @action(detail=False, methods=['post'])
     def review(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         

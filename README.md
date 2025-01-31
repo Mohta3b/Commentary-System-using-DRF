@@ -116,8 +116,6 @@ Where:
 - _Unlike the standard Bayesian method, this approach calculates the real average in the first week (M=C=0)._
 - _A minor sudden average change occurs after each weekly update._
 
-Here is the comparison between different approaches:
-
 #### Comparison of Different Approaches:
 
 |                **Method**                |                            **Description**                            |                         **Pros**                          |                         **Cons**                          |
